@@ -36,56 +36,12 @@ ngpu = 2
 
 
 
+parser = argparse.ArgumentParser(description='Process args for patch extraction')
+parser.add_argument("--root_dir", type=str, help="Root directory", default="./tissue_images/")
+parser.add_argument("--model_save_path", type=str, default="./")
+parser.add_argument("--log_dir", type=str, default="./logs/ara_resnet")
+args = parser.parse_args()
 
-
-root = '/ssd_scratch/cvit/ashishmenon/ara_expts/'        
-
-
-
-
-T = {'train': transforms.Compose([ transforms.Resize(224),
-                                   transforms.RandomHorizontalFlip(p=0.8),
-                                   transforms.RandomVerticalFlip(p=0.8),
-                                   transforms.RandomRotation(90),
-                                   transforms.RandomAffine(degrees=0, translate=(0.1,0.1)),
-                                   transforms.ToTensor(),
-                                   transforms.Normalize((0.5,0.5,0.5), (0.5,0.5,0.5))       
-                                 ]) ,
-      
-    'val': transforms.Compose([  transforms.Resize(224),
-                                   transforms.ToTensor(),
-                                   transforms.Normalize((0.5,0.5,0.5), (0.5,0.5,0.5))       
-                                 ]) ,
-      
-    'test': transforms.Compose([   transforms.Resize(224),
-                                   transforms.ToTensor(),
-                                   transforms.Normalize((0.5,0.5,0.5), (0.5,0.5,0.5))       
-                                 ]) 
-    }
-
-datasets={x: dset.ImageFolder( os.path.join(root,x), T[x] ) for x in os.listdir(root) }
-
-dataloaders = {}
-dataloaders['train'] = torch.utils.data.DataLoader(datasets['train'] , shuffle=True, batch_size=32 , num_workers=8)
-dataloaders['val'] = torch.utils.data.DataLoader(datasets['val'] , shuffle=True, batch_size=128 , num_workers=16)
-dataloaders['test'] = torch.utils.data.DataLoader(datasets['test'] , shuffle=False, batch_size=128 , num_workers=16)
-
-device=torch.device('cuda:0' if torch.cuda.is_available() else "cpu")
-class_names=datasets['train'].classes
-
-print(len(datasets['val']))
-
-lst=os.listdir(root)
-
-acc_list_train=[]
-loss_list_train=[]
-
-acc_list_val=[]
-loss_list_val=[]
-
-epoch_list=[]
-epoch_train = []
-epoch_val = []
 
 
 
@@ -136,7 +92,7 @@ def train_model(model, criterion, optimizer, scheduler_train , scheduler_val, nu
                
                 best_acc=epoch_acc[phase]
                 best_model_wts=copy.deepcopy(model.state_dict())
-                torch.save(model.state_dict(),'/home/ashishmenon/ARA/Pytorch_imp/ara_pretrained/model_op/squeezenet_pretrained_acc.pth')
+                torch.save(model.state_dict(),args.model_save_path+'squeezenet_pretrained_acc.pth')
         
         writer.add_scalars('Loss',{'train':epoch_loss['train'],'val':epoch_loss['val']}, epoch)
         writer.close()
@@ -151,23 +107,63 @@ def train_model(model, criterion, optimizer, scheduler_train , scheduler_val, nu
     return model
 
 
-num_ftrs = 1000
-model_ft = nn.Sequential(models.squeezenet1_1(pretrained=True), nn.Linear(num_ftrs,8))
+if __name__=='__main__':
+    if not os.path.exists(args.model_save_path):
+        os.makedirs(args.model_save_path)
+
+    if not os.path.exists(args.log_dir:
+        os.makedirs(args.log_dir)
 
 
-model_ft = model_ft.to(device)
-
-criterion = nn.CrossEntropyLoss()
+    root = args.root_dir       
 
 
-optimizer_ft = optim.Adam(model_ft.parameters(),lr=0.00005, weight_decay=0.005)
-exp_lr_scheduler_val = optim.lr_scheduler.ReduceLROnPlateau(optimizer_ft,verbose=True,mode='max',patience=5)
-exp_lr_scheduler_train = optim.lr_scheduler.ReduceLROnPlateau(optimizer_ft,verbose=True,mode='min',patience=5)
+    T = {'train': transforms.Compose([ transforms.Resize(224),
+                                       transforms.RandomHorizontalFlip(p=0.8),
+                                       transforms.RandomVerticalFlip(p=0.8),
+                                       transforms.RandomRotation(90),
+                                       transforms.RandomAffine(degrees=0, translate=(0.1,0.1)),
+                                       transforms.ToTensor(),
+                                       transforms.Normalize((0.5,0.5,0.5), (0.5,0.5,0.5))       
+                                     ]) ,
+          
+        'val': transforms.Compose([  transforms.Resize(224),
+                                       transforms.ToTensor(),
+                                       transforms.Normalize((0.5,0.5,0.5), (0.5,0.5,0.5))       
+                                     ]) ,
+          
+        'test': transforms.Compose([   transforms.Resize(224),
+                                       transforms.ToTensor(),
+                                       transforms.Normalize((0.5,0.5,0.5), (0.5,0.5,0.5))       
+                                     ]) 
+        }
+
+    datasets={x: dset.ImageFolder( os.path.join(root,x), T[x] ) for x in os.listdir(root) }
+
+    dataloaders = {}
+    dataloaders['train'] = torch.utils.data.DataLoader(datasets['train'] , shuffle=True, batch_size=32 , num_workers=8)
+    dataloaders['val'] = torch.utils.data.DataLoader(datasets['val'] , shuffle=True, batch_size=128 , num_workers=16)
+    dataloaders['test'] = torch.utils.data.DataLoader(datasets['test'] , shuffle=False, batch_size=128 , num_workers=16)
+
+    device=torch.device('cuda:0' if torch.cuda.is_available() else "cpu")
+    class_names=datasets['train'].classes
+
+    num_ftrs = 1000
+    model_ft = nn.Sequential(models.squeezenet1_1(pretrained=True), nn.Linear(num_ftrs,len(class_names)))
+
+    model_ft = model_ft.to(device)
+
+    criterion = nn.CrossEntropyLoss()
 
 
-writer = SummaryWriter(log_dir='./logs/pretrained_squeezenet/')
+    optimizer_ft = optim.Adam(model_ft.parameters(),lr=0.00005, weight_decay=0.005)
+    exp_lr_scheduler_val = optim.lr_scheduler.ReduceLROnPlateau(optimizer_ft,verbose=True,mode='max',patience=5)
+    exp_lr_scheduler_train = optim.lr_scheduler.ReduceLROnPlateau(optimizer_ft,verbose=True,mode='min',patience=5)
 
 
-model_best = train_model(model_ft, criterion, optimizer_ft,exp_lr_scheduler_train,exp_lr_scheduler_val, num_epochs=200)
+    writer = SummaryWriter(log_dir=args.log_dir)
+
+
+    model_best = train_model(model_ft, criterion, optimizer_ft,exp_lr_scheduler_train,exp_lr_scheduler_val, num_epochs=200)
 
 

@@ -528,7 +528,7 @@ class run_model():
             if self.expt == 'Active_Learning':
                 active_learning_entropy_tranfer(self.model, self.testruns, self.variation_dropout_calls , self.uncertainity_measure, dataloader_remain.data_loader,dataloader_train.data_loader,data_mover)
             if self.expt == 'Random':
-                p = glob.glob('/ssd_scratch/cvit/ashishmenon/ara_random_expts/remain/**/*.tif')
+                p = glob.glob(args.random_transfer_dir + '/remain/**/*.tif')
                 random.shuffle(p)
                 for i in p[0:160]:
                     data_mover.active_learning_split(i.split('/')[7],i.split('/')[6])

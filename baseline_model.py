@@ -32,8 +32,6 @@ torch.manual_seed(seed)
 np.random.seed(seed)
 rd.seed(seed)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-ngpu = 2
-
 
 
 parser = argparse.ArgumentParser(description='Process args for patch extraction')

@@ -1,0 +1,14 @@
+Expt1. Currently active learning, we are retraining for all  the previously accumulated plus currently accumulated.
+Try to train the model only on currently accumulated?
+
+Expt2. Try using only the best uncertain samples in the remaining folder (4176 images) and put them into train (320 images) and check the accuracy on test as well as the remaining (4176 - the most uncertain samples chosen)
+
+Expt3. Looking at using KL divergence between softmax of average of the class embedding and softmax of embedding of query images  as a measure of selecting images for labeling.
+
+
+To be asked questions?
+-What are the key attributes that the pathologist look at inorder to determine if cancer or normal?
+	*May be the types of tissues involved?, their number of occurence?
+	*In the loop involvement would mean what kind of information we extract? Label, coordinates, text.
+
+-CLustering kind of methods, to ensure best selection of samples for labelling (encoder based). In SMILY they use all the encodings of each patches (1,24,000) stored in the database to compare the L2 distance of the encoding o fquery sample to retrieve similar patches.
